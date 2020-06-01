@@ -2,7 +2,6 @@ import argparse
 import csv
 import glob
 import logging
-import os.path
 import re
 import shutil
 import subprocess
@@ -10,8 +9,8 @@ import time
 import zipfile
 
 from configs.config import Config
-
 from datetime import datetime
+from os import path
 
 
 def get_parser():
@@ -76,18 +75,18 @@ class CLIUploaderParser:
         self.temp_dir = temp_dir
         self.last_log = self._get_last_log()
         self._make_log_copy()
-        self.log_file = os.path.join(self.temp_dir, os.path.basename(self.last_log))
+        self.log_file = path.join(self.temp_dir, path.basename(self.last_log))
         self.full_text = self._get_log_content()
 
     def _get_last_log(self):
         """Find and return last created log in the logs folder"""
         logger.debug(f"logs_dir = {self.logs_dir}")
-        files_list = list(glob.iglob(os.path.join(self.logs_dir, "*.log")))
+        files_list = list(glob.iglob(path.join(self.logs_dir, "*.log")))
         if not files_list:
             logger.error("Logs not found")
             return
-        last_log = max(files_list, key=os.path.getctime)
-        logger.debug(f"Selected log file: {os.path.basename(last_log)}")
+        last_log = max(files_list, key=path.getctime)
+        logger.debug(f"Selected log file: {path.basename(last_log)}")
 
         return last_log
 
@@ -156,7 +155,7 @@ class CLIUploaderParser:
     def _make_log_copy(self):
         """Copy found last log to the temp folder"""
         try:
-            if not os.path.exists(self.temp_dir):
+            if not path.exists(self.temp_dir):
                 os.mkdir(self.temp_dir)
                 logger.info(f"Folder {self.temp_dir} has been created")
             shutil.copy(self.last_log, self.temp_dir)
@@ -180,7 +179,7 @@ class CLIUploaderParser:
 class PerformanceRun:
     """Class allows run JavaScript test via NATS"""
     NATS_DIR = Config().nats_dir
-    RUN_FILE = os.path.join(NATS_DIR, "TCRunner", "run.cmd ")
+    RUN_FILE = path.join(NATS_DIR, "TCRunner", "run.cmd ")
 
     data = []
 
@@ -190,25 +189,25 @@ class PerformanceRun:
 
     def get_script_to_run(self):
         """Chose a correct manifest in the test case"""
-        script_location = os.path.join(
+        script_location = path.join(
             self.NATS_DIR, "_Tests_NGP", self.TEST_NAME_JS
         )
 
-        script_js = os.path.join(
+        script_js = path.join(
             script_location, "manifest.json"
         )
-        script_js_1880 = os.path.join(
+        script_js_1880 = path.join(
             script_location, "manifest_770_1880.json"
         )
-        script_js_1884 = os.path.join(
+        script_js_1884 = path.join(
             script_location, "manifest_780_1884.json"
         )
 
-        if os.path.isfile(script_js_1880):
+        if path.isfile(script_js_1880):
             return script_js_1880
-        elif os.path.isfile(script_js):
+        elif path.isfile(script_js):
             return script_js
-        elif os.path.isfile(script_js_1884):
+        elif path.isfile(script_js_1884):
             return script_js_1884
         else:
             logger.exception("File not found!")
@@ -216,7 +215,7 @@ class PerformanceRun:
     def save_to_csv(self, file_name="Results.csv"):
         """Save data to .csv file"""
         try:
-            with open(os.path.join(self.temp_dir, file_name),  mode="w", newline="") as file:
+            with open(path.join(self.temp_dir, file_name),  mode="w", newline="") as file:
                 fields = self.data[0].keys()
                 writer = csv.DictWriter(file, fieldnames=fields)
 
@@ -230,10 +229,10 @@ class PerformanceRun:
         """Archiving log and scv files and delete after that"""
         try:
             name = f"Performance_{self.TEST_NAME_JS}_{uploader_version}.zip"
-            with zipfile.ZipFile(os.path.join(self.temp_dir, name), "w") as zip_file:
-                for file in glob.glob(os.path.join(self.temp_dir, "*.*")):
+            with zipfile.ZipFile(path.join(self.temp_dir, name), "w") as zip_file:
+                for file in glob.glob(path.join(self.temp_dir, "*.*")):
                     if file.endswith(".log") or file.endswith(".csv"):
-                        file_name = str(os.path.basename(file))
+                        file_name = str(path.basename(file))
                         zip_file.write(file, file_name)
                         logger.info(f"File {file_name} has been archived")
                         os.remove(file)
